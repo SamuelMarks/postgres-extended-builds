@@ -128,6 +128,7 @@ COPY --from=builder /usr/local/bin/postgres           /usr/local/bin/postgres
 COPY --from=builder /usr/local/include/postgresql     /usr/local/include/postgresql
 COPY --from=builder /usr/local/include/postgres_ext.h /usr/local/include/
 COPY --from=builder /usr/local/bin/postgres           /usr/local/bin/ 
+COPY --from=builder /usr/lib/"postgresql${PG_MAJOR}"  /usr/lib/"postgresql${PG_MAJOR}"
 
 STOPSIGNAL SIGINT
 
