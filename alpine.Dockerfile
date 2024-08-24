@@ -8,6 +8,7 @@ ARG PGMQ=1
 ARG PGMQ_VER="1.4.2"
 ARG POSTGRESML=0
 ARG POSTGRESML_VER="2e26626"
+ARG PGAI=1
 ENV PGRX_HOME='/opt/pgrx'
 
 RUN apk add --no-cache \
@@ -20,12 +21,14 @@ RUN apk add --no-cache \
     git \
     linux-headers \
     llvm15 \
+    make \
     openblas-dev \
     perl \
     pkgconf \
     "postgresql${PG_MAJOR}-plpython3" \
     # be careful with this one^
     "postgresql${PG_MAJOR}-dev" \
+    py3-pip \
     python3-dev \
     readline-dev \
     tzdata \
@@ -96,6 +99,7 @@ RUN if [ "${POSTGRESML}" -eq 1 ]; then \
 # dependencies: pgvector
 RUN if [[ "${PGAI}" -eq 1 && "${PGVECTOR}" -eq 1 ]]; then \
       git clone --depth=1 --single-branch https://github.com/timescale/pgai && \
+      python3 -m venv /opt/venv && . /opt/venv/bin/activate && \
       cd pgai && \
       make install ; \
     fi
@@ -129,9 +133,17 @@ COPY --from=builder /usr/local/include/postgresql     /usr/local/include/postgre
 COPY --from=builder /usr/local/include/postgres_ext.h /usr/local/include/
 COPY --from=builder /usr/local/bin/postgres           /usr/local/bin/ 
 COPY --from=builder /usr/lib/"postgresql${PG_MAJOR}"  /usr/lib/"postgresql${PG_MAJOR}"
+COPY --from=builder /usr/lib/libpython3*              /usr/lib/
+# sanity copy, will error if file doesn't exist
+COPY --from=builder /usr/local/share/postgresql/extension/ai.control /usr/local/share/postgresql/extension/ai.control
+RUN apk add --no-cache python3-dev "postgresql${PG_MAJOR}-plpython3"
 
 STOPSIGNAL SIGINT
 
 EXPOSE 5432
+
+
+ENV PYTHONPATH="/opt/venv/lib/python3.12/site-packages"
+ENV VIRTUAL_ENV="/opt/venv"
 
 CMD ["postgres"]
