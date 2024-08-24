@@ -2,8 +2,11 @@ ARG PG_MAJOR=16
 
 FROM postgres:${PG_MAJOR}-alpine AS builder
 ARG PG_MAJOR
+ARG PGVECTOR=1
 ARG PGVECTOR_VER="0.7.4"
+ARG PGMQ=1
 ARG PGMQ_VER="1.4.2"
+ARG POSTGRESML=0
 ARG POSTGRESML_VER="2e26626"
 ENV PGRX_HOME='/opt/pgrx'
 
@@ -20,7 +23,9 @@ RUN apk add --no-cache \
     openblas-dev \
     perl \
     pkgconf \
-    postgresql${PG_MAJOR}-dev \
+    "postgresql${PG_MAJOR}-plpython3" \
+    # be careful with this one^
+    "postgresql${PG_MAJOR}-dev" \
     python3-dev \
     readline-dev \
     tzdata \
@@ -35,38 +40,68 @@ ADD "https://api.github.com/repos/postgresml/postgresml/tarball/${POSTGRESML_VER
 #########################
 #   pgvector/pgvector   #
 #########################
-RUN tar xf v${PGVECTOR_VER}.tar.gz && \
-    cd "pgvector-${PGVECTOR_VER}" && \
-    make clean && \
-    make OPTFLAGS="" && \
-    make install && \
-    mkdir -p /usr/share/doc/pgvector && \
-    cp LICENSE README.md /usr/share/doc/pgvector
+RUN if [ "${PGVECTOR}" -eq 1 ]; then \
+      tar xf v${PGVECTOR_VER}.tar.gz && \
+      cd "pgvector-${PGVECTOR_VER}" && \
+      make clean && \
+      make OPTFLAGS="" && \
+      make install && \
+      mkdir -p /usr/share/doc/pgvector && \
+      cp LICENSE README.md /usr/share/doc/pgvector ; \
+    fi
 
 ########################
 #   tembo-io/pgmq      #
 ########################
-RUN tar xf "v${PGMQ_VER}.tar.gz" && \
-    cd "pgmq-${PGMQ_VER}/pgmq-extension" && \
-    make && \
-    make install
+RUN if [ "${PGMQ}" -eq 1 ]; then \
+      tar xf "v${PGMQ_VER}.tar.gz" && \
+      cd "pgmq-${PGMQ_VER}/pgmq-extension" && \
+      make && \
+      make install ; \
+    fi
 
 #########################
 # postgresml/postgresml #
 #########################
 #tar xfv postgresml.tar.gz && \
 #    cd postgresml-*/pgml-extension && \
-RUN git clone --depth=1 --single-branch --recursive https://github.com/postgresml/postgresml && \
-    cd postgresml && \
-    cargo install cargo-pgrx --version 0.11.2
-# cargo install cargo-pgrx --git https://github.com/SamuelMarks/pgrx --branch symbol-redefinition
-
 ENV RUST_BACKTRACE=full
 ENV COLORBT_SHOW_HIDDEN=1
-RUN cd /tmp/wd/postgresml/pgml-extension && \
-    cargo pgrx init
-RUN cd /tmp/wd/postgresml/pgml-extension && \
-    cargo pgrx install
+RUN if [ "${POSTGRESML}" -eq 1 ]; then \
+      git clone --depth=1 --single-branch --recursive https://github.com/postgresml/postgresml && \
+      cd postgresml && \
+      cargo install cargo-pgrx --version 0.11.2 && \
+      cargo pgrx init && \
+      cargo pgrx install ; \
+    fi
+
+#########################
+# postgresml/postgresml #
+#########################
+#tar xfv postgresml.tar.gz && \
+#    cd postgresml-*/pgml-extension && \
+ENV RUST_BACKTRACE=full
+ENV COLORBT_SHOW_HIDDEN=1
+RUN if [ "${POSTGRESML}" -eq 1 ]; then \
+      git clone --depth=1 --single-branch --recursive https://github.com/postgresml/postgresml && \
+      cd postgresml && \
+      cargo install cargo-pgrx --version 0.11.2 && \
+      cargo pgrx init && \
+      cargo pgrx install ; \
+    fi
+
+#########################
+#    timescale/pgai     #
+#########################
+# dependencies: pgvector
+RUN if [[ "${PGAI}" -eq 1 && "${PGVECTOR}" -eq 1 ]]; then \
+      git clone --depth=1 --single-branch https://github.com/timescale/pgai && \
+      cd pgai && \
+      make install ; \
+    fi
+
+# cargo install cargo-pgrx --git https://github.com/SamuelMarks/pgrx --branch symbol-redefinition
+
 #   cargo install sqlx-cli --version 0.6.3 && \
 #   cargo sqlx database setup
 
