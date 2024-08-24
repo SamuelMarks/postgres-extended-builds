@@ -92,6 +92,10 @@ RUN if [ "${POSTGRESML}" -eq 1 ]; then \
       cargo pgrx init && \
       cargo pgrx install ; \
     fi
+# cargo install cargo-pgrx --git https://github.com/SamuelMarks/pgrx --branch symbol-redefinition
+
+#   cargo install sqlx-cli --version 0.6.3 && \
+#   cargo sqlx database setup
 
 #########################
 #    timescale/pgai     #
@@ -103,11 +107,6 @@ RUN if [[ "${PGAI}" -eq 1 && "${PGVECTOR}" -eq 1 ]]; then \
       cd pgai && \
       make install ; \
     fi
-
-# cargo install cargo-pgrx --git https://github.com/SamuelMarks/pgrx --branch symbol-redefinition
-
-#   cargo install sqlx-cli --version 0.6.3 && \
-#   cargo sqlx database setup
 
 FROM postgres:${PG_MAJOR}-alpine AS runner
 ARG PG_MAJOR
@@ -124,18 +123,21 @@ COPY --from=builder /usr/local/include/postgresql/server/extension /usr/local/in
 # postgresml
 # COPY --from=builder "${PGRX_HOME}" "${PGRX_HOME}"
 
+# pgai
+COPY --from=builder /tmp/wd/pgai                                    /tmp/wd/pgai
+COPY --from=builder /usr/local/lib/pgai                             /usr/local/lib/pgai
+
 # nuclear option in case something was missed
-COPY --from=builder /usr/local/lib/postgresql         /usr/local/lib/postgresql
-COPY --from=builder /var/lib/postgresql               /var/lib/postgresql
-COPY --from=builder /usr/local/share/postgresql       /usr/local/share/postgresql
-COPY --from=builder /usr/local/bin/postgres           /usr/local/bin/postgres
-COPY --from=builder /usr/local/include/postgresql     /usr/local/include/postgresql
-COPY --from=builder /usr/local/include/postgres_ext.h /usr/local/include/
-COPY --from=builder /usr/local/bin/postgres           /usr/local/bin/ 
-COPY --from=builder /usr/lib/"postgresql${PG_MAJOR}"  /usr/lib/"postgresql${PG_MAJOR}"
-COPY --from=builder /usr/lib/libpython3*              /usr/lib/
-# sanity copy, will error if file doesn't exist
-COPY --from=builder /usr/local/share/postgresql/extension/ai.control /usr/local/share/postgresql/extension/ai.control
+COPY --from=builder /usr/local/lib/postgresql                       /usr/local/lib/postgresql
+COPY --from=builder /var/lib/postgresql                             /var/lib/postgresql
+COPY --from=builder /usr/local/share/postgresql                     /usr/local/share/postgresql
+COPY --from=builder /usr/local/bin/postgres                         /usr/local/bin/postgres
+COPY --from=builder /usr/local/include/postgresql                   /usr/local/include/postgresql
+COPY --from=builder /usr/local/include/postgres_ext.h               /usr/local/include/
+COPY --from=builder /usr/local/bin/postgres                         /usr/local/bin/
+COPY --from=builder /usr/lib/"postgresql${PG_MAJOR}"                /usr/lib/"postgresql${PG_MAJOR}"
+COPY --from=builder /usr/lib/libpython3*                            /usr/lib/
+
 RUN apk add --no-cache python3-dev "postgresql${PG_MAJOR}-plpython3"
 
 STOPSIGNAL SIGINT
