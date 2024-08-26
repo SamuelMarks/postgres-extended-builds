@@ -38,6 +38,19 @@ jobs:
           printf '%s\n' "$version" > VERSION
           echo "::set-output name=pgmq_version::$version"
 
+      - name: Get pgai version
+        id: pgai_version
+        shell: bash
+        run: |
+          version="$(curl -s https://api.github.com/repos/timescale/pgai/tags | jq -r .[0].name)"
+          # rather than pass in next `step` with `build-args` replace here:
+          sed -i '/^ARG pgai_version=/c\ARG pgai_version='"$version" alpine.Dockerfile
+          # Don't run next `step` if Dockerfile unchanged
+          # git diff --exit-code alpine.Dockerfile >/dev/null && >&2 echo 'No Dockerfile changes made' && exit 3
+          printf 'pgvector_version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$version" > VERSION
+          echo "::set-output name=pgai_version::$version"
+
       - uses: dorny/paths-filter@v3
         id: changes
         with:
@@ -66,7 +79,7 @@ jobs:
           file: alpine.Dockerfile
           tags: |
             samuelmarks/postgres-extended-builds:alpine_latest
-            samuelmarks/postgres-extended-builds:alpine_pgvector${{ steps.pgvector_version.outputs.pgvector_version }}_pgmq${{ steps.pgvector_version.outputs.pgmq_version }}
+            samuelmarks/postgres-extended-builds:alpine_pgvector${{ steps.pgvector_version.outputs.pgvector_version }}_pgmq${{ steps.pgvector_version.outputs.pgmq_version }}_pgai${{ steps.pgvector_version.outputs.pgai_version }}
         env:
           pgvector_version: ${{ steps.pgvector_version.outputs.pgvector_version }}
           pgmq_version: ${{ steps.pgmq_version.outputs.pgmq_version }}
