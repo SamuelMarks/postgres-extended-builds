@@ -79,7 +79,7 @@ jobs:
           file: alpine.Dockerfile
           tags: |
             samuelmarks/postgres-extended-builds:alpine_latest
-            samuelmarks/postgres-extended-builds:alpine_pgvector${{ steps.pgvector_version.outputs.pgvector_version }}_pgmq${{ pgmq_version }}_pgai${{ pgai_version }}
+            samuelmarks/postgres-extended-builds:alpine_pgvector${pgvector_version}_pgmq${pgmq_version}_pgai${pgai_version}
         env:
           pgvector_version: ${{ steps.pgvector_version.outputs.pgvector_version }}
           pgmq_version: ${{ steps.pgmq_version.outputs.pgmq_version }}
