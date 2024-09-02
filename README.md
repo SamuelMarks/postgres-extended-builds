@@ -1,5 +1,6 @@
 postgres extended builds
 ========================
+[![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker Image Version (tag)](https://img.shields.io/docker/v/samuelmarks/postgres-extended-builds/alpine_latest)](https://hub.docker.com/r/samuelmarks/postgres-extended-builds/tags)
 [![docker_build](https://github.com/SamuelMarks/postgres-extended-builds/actions/workflows/docker_build.yml/badge.svg)](https://github.com/SamuelMarks/postgres-extended-builds/actions/workflows/docker_build.yml)
 
